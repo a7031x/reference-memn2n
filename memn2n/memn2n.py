@@ -175,8 +175,7 @@ class MemN2N(object):
         with tf.variable_scope(self._name):
             # Use A_1 for thee question embedding as per Adjacent Weight Sharing
             q_emb = tf.nn.embedding_lookup(self.A_1, queries)
-            u_0 = tf.reduce_sum(q_emb * self._encoding, 1)
-            u = [u_0]
+            u_k = tf.reduce_sum(q_emb * self._encoding, 1)
 
             for hopn in range(self._hops):
                 if hopn == 0:
@@ -188,7 +187,7 @@ class MemN2N(object):
                     m_A = tf.reduce_sum(m_emb_A * self._encoding, 2)
 
                 # hack to get around no reduce_dot
-                u_temp = tf.transpose(tf.expand_dims(u[-1], -1), [0, 2, 1])
+                u_temp = tf.transpose(tf.expand_dims(u_k, -1), [0, 2, 1])
                 dotted = tf.reduce_sum(m_A * u_temp, 2)
 
                 # Calculate probabilities
@@ -203,14 +202,7 @@ class MemN2N(object):
 
                 # Dont use projection layer for adj weight sharing
                 # u_k = tf.matmul(u[-1], self.H) + o_k
-
-                u_k = u[-1] + o_k
-
-                # nonlinearity
-                if self._nonlin:
-                    u_k = nonlin(u_k)
-
-                u.append(u_k)
+                u_k = u_k + o_k
 
             # Use last C for output (transposed)
             return tf.matmul(u_k, tf.transpose(self.C[-1], [1,0]))
