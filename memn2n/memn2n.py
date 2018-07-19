@@ -111,29 +111,14 @@ class MemN2N(object):
         self._build_inputs()
         self._build_vars()
 
-        self._opt = tf.train.GradientDescentOptimizer(learning_rate=self._lr)
+        self._opt = tf.train.AdamOptimizer(learning_rate=self._lr)
 
         self._encoding = tf.constant(encoding(self._sentence_size, self._embedding_size), name="encoding")
 
         # cross entropy
         logits = self._inference(self._stories, self._queries) # (batch_size, vocab_size)
         cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=tf.cast(self._answers, tf.float32), name="cross_entropy")
-        cross_entropy_sum = tf.reduce_sum(cross_entropy, name="cross_entropy_sum")
-
-        # loss op
-        loss_op = cross_entropy_sum
-
-        # gradient pipeline
-        grads_and_vars = self._opt.compute_gradients(loss_op)
-        grads_and_vars = [(tf.clip_by_norm(g, self._max_grad_norm), v) for g,v in grads_and_vars]
-        grads_and_vars = [(add_gradient_noise(g), v) for g,v in grads_and_vars]
-        nil_grads_and_vars = []
-        for g, v in grads_and_vars:
-            if v.name in self._nil_vars:
-                nil_grads_and_vars.append((zero_nil_slot(g), v))
-            else:
-                nil_grads_and_vars.append((g, v))
-        train_op = self._opt.apply_gradients(nil_grads_and_vars, name="train_op")
+        loss_op = tf.reduce_sum(cross_entropy, name="cross_entropy_sum")
 
         # predict ops
         predict_op = tf.argmax(logits, 1, name="predict_op")
@@ -145,7 +130,12 @@ class MemN2N(object):
         self.predict_op = predict_op
         self.predict_proba_op = predict_proba_op
         self.predict_log_proba_op = predict_log_proba_op
-        self.train_op = train_op
+        self.opt = tf.train.AdamOptimizer(learning_rate=1E-3)
+        self.global_step = tf.Variable(0, trainable=False)
+        grads = self.opt.compute_gradients(self.loss_op)
+        gradients, variables = zip(*grads)
+        capped_grads, _ = tf.clip_by_global_norm(gradients, 40.0)
+        self.train_op = self.opt.apply_gradients(zip(capped_grads, variables), global_step=self.global_step)
 
         init_op = tf.global_variables_initializer()
         self._sess = session
@@ -181,6 +171,7 @@ class MemN2N(object):
         self._nil_vars = set([self.A_1.name] + [x.name for x in self.C])
 
     def _inference(self, stories, queries):
+        self._encoding = 1
         with tf.variable_scope(self._name):
             # Use A_1 for thee question embedding as per Adjacent Weight Sharing
             q_emb = tf.nn.embedding_lookup(self.A_1, queries)
@@ -193,9 +184,8 @@ class MemN2N(object):
                     m_A = tf.reduce_sum(m_emb_A * self._encoding, 2)
 
                 else:
-                    with tf.variable_scope('hop_{}'.format(hopn - 1)):
-                        m_emb_A = tf.nn.embedding_lookup(self.C[hopn - 1], stories)
-                        m_A = tf.reduce_sum(m_emb_A * self._encoding, 2)
+                    m_emb_A = tf.nn.embedding_lookup(self.C[hopn - 1], stories)
+                    m_A = tf.reduce_sum(m_emb_A * self._encoding, 2)
 
                 # hack to get around no reduce_dot
                 u_temp = tf.transpose(tf.expand_dims(u[-1], -1), [0, 2, 1])
@@ -205,8 +195,7 @@ class MemN2N(object):
                 probs = tf.nn.softmax(dotted)
 
                 probs_temp = tf.transpose(tf.expand_dims(probs, -1), [0, 2, 1])
-                with tf.variable_scope('hop_{}'.format(hopn)):
-                    m_emb_C = tf.nn.embedding_lookup(self.C[hopn], stories)
+                m_emb_C = tf.nn.embedding_lookup(self.C[hopn], stories)
                 m_C = tf.reduce_sum(m_emb_C * self._encoding, 2)
 
                 c_temp = tf.transpose(m_C, [0, 2, 1])
@@ -224,8 +213,7 @@ class MemN2N(object):
                 u.append(u_k)
 
             # Use last C for output (transposed)
-            with tf.variable_scope('hop_{}'.format(self._hops)):
-                return tf.matmul(u_k, tf.transpose(self.C[-1], [1,0]))
+            return tf.matmul(u_k, tf.transpose(self.C[-1], [1,0]))
 
     def batch_fit(self, stories, queries, answers, learning_rate):
         """Runs the training algorithm over the passed batch
