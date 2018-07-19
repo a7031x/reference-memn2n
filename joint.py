@@ -128,8 +128,8 @@ with tf.Session() as sess:
 
         if i % FLAGS.evaluation_interval == 0:
             train_accs = []
-            for start in range(0, n_train, n_train/20):
-                end = start + n_train/20
+            for start in range(0, n_train, n_train//20):
+                end = start + n_train//20
                 s = trainS[start:end]
                 q = trainQ[start:end]
                 pred = model.predict(s, q)
@@ -137,8 +137,8 @@ with tf.Session() as sess:
                 train_accs.append(acc)
 
             val_accs = []
-            for start in range(0, n_val, n_val/20):
-                end = start + n_val/20
+            for start in range(0, n_val, n_val//20):
+                end = start + n_val//20
                 s = valS[start:end]
                 q = valQ[start:end]
                 pred = model.predict(s, q)
@@ -146,8 +146,8 @@ with tf.Session() as sess:
                 val_accs.append(acc)
 
             test_accs = []
-            for start in range(0, n_test, n_test/20):
-                end = start + n_test/20
+            for start in range(0, n_test, n_test//20):
+                end = start + n_test//20
                 s = testS[start:end]
                 q = testQ[start:end]
                 pred = model.predict(s, q)
