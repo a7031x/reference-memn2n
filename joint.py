@@ -167,12 +167,11 @@ with tf.Session() as sess:
                 print()
                 t += 1
             print('-----------------------')
-
-        # Write final results to csv file
-        if i == FLAGS.epochs:
             dev_accuracy = sum(val_accs) / len(val_accs)
             test_accuracy = sum(test_accs) / len(test_accs)
             print('Writing final results to {}, dev: {} test: {}'.format(FLAGS.output_file, dev_accuracy, test_accuracy))
+        # Write final results to csv file
+        if i == FLAGS.epochs:
             df = pd.DataFrame({
             'Training Accuracy': train_accs,
             'Validation Accuracy': val_accs,
