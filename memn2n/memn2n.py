@@ -180,6 +180,18 @@ class MemN2N(object):
 
         self._nil_vars = set([self.A_1.name] + [x.name for x in self.C])
 
+
+    def export(self, sess):
+        import pickle
+        a, c0, c1, c2 = sess.run([self.A_1, self.C[0], self.C[1], self.C[2]])
+        nps = {
+            'A': a,
+            'C': [c0, c1, c2]
+        }
+        with open('./export.pkl', 'wb') as file:
+            pickle.dump(nps, file)
+
+            
     def _inference(self, stories, queries):
         with tf.variable_scope(self._name):
             # Use A_1 for thee question embedding as per Adjacent Weight Sharing

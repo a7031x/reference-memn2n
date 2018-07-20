@@ -18,7 +18,7 @@ tf.flags.DEFINE_float("anneal_rate", 15, "Number of epochs between halving the l
 tf.flags.DEFINE_float("anneal_stop_epoch", 60, "Epoch number to end annealed lr schedule.")
 tf.flags.DEFINE_float("max_grad_norm", 40.0, "Clip gradients to this norm.")
 tf.flags.DEFINE_integer("evaluation_interval", 10, "Evaluate and print results every x epochs")
-tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
+tf.flags.DEFINE_integer("batch_size", 64, "Batch size for training.")
 tf.flags.DEFINE_integer("hops", 3, "Number of hops in the Memory Network.")
 tf.flags.DEFINE_integer("epochs", 60, "Number of epochs to train for.")
 tf.flags.DEFINE_integer("embedding_size", 40, "Embedding size for embedding matrices.")
@@ -179,3 +179,4 @@ with tf.Session() as sess:
             }, index=range(1, 21))
             df.index.name = 'Task'
             df.to_csv(FLAGS.output_file)
+            model.export(sess)
