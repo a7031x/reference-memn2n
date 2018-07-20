@@ -121,6 +121,7 @@ with tf.Session() as sess:
             print('Training Accuracy:', train_acc)
             print('Validation Accuracy:', val_acc)
             print('-----------------------')
+    model.export(sess)
 
     test_preds = model.predict(testS, testQ)
     test_acc = metrics.accuracy_score(test_preds, test_labels)
