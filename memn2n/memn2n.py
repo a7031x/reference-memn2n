@@ -55,6 +55,7 @@ def add_gradient_noise(t, stddev=1e-3, name=None):
 class MemN2N(object):
     """End-To-End Memory Network."""
     def __init__(self, batch_size, vocab_size, sentence_size, memory_size, embedding_size,
+        mat_A, mat_C,
         hops=3,
         max_grad_norm=40.0,
         nonlin=None,
@@ -109,7 +110,7 @@ class MemN2N(object):
         self._name = name
 
         self._build_inputs()
-        self._build_vars()
+        self._build_vars(mat_A, mat_C)
 
         self._opt = tf.train.GradientDescentOptimizer(learning_rate=self._lr)
 
@@ -158,19 +159,19 @@ class MemN2N(object):
         self._answers = tf.placeholder(tf.int32, [None, self._vocab_size], name="answers")
         self._lr = tf.placeholder(tf.float32, [], name="learning_rate")
 
-    def _build_vars(self):
+    def _build_vars(self, mat_A, mat_C):
         with tf.variable_scope(self._name):
             nil_word_slot = tf.zeros([1, self._embedding_size])
-            A = tf.concat(axis=0, values=[ nil_word_slot, self._init([self._vocab_size-1, self._embedding_size]) ])
-            C = tf.concat(axis=0, values=[ nil_word_slot, self._init([self._vocab_size-1, self._embedding_size]) ])
+            A = tf.concat(axis=0, values=[ nil_word_slot,  tf.Variable(mat_A[1:])])
 
-            self.A_1 = tf.Variable(A, name="A")
+            self.A_1 = A
 
             self.C = []
 
             for hopn in range(self._hops):
                 with tf.variable_scope('hop_{}'.format(hopn)):
-                    self.C.append(tf.Variable(C, name="C"))
+                    C = tf.concat(axis=0, values=[ nil_word_slot, tf.Variable(mat_C[hopn][1:])])
+                    self.C.append(C)
 
             # Dont use projection for layerwise weight sharing
             # self.H = tf.Variable(self._init([self._embedding_size, self._embedding_size]), name="H")

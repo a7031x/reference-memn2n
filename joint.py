@@ -107,7 +107,11 @@ batches = zip(range(0, n_train-batch_size, batch_size), range(batch_size, n_trai
 batches = [(start, end) for start,end in batches]
 
 with tf.Session() as sess:
-    model = MemN2N(batch_size, vocab_size, sentence_size, memory_size, FLAGS.embedding_size, session=sess,
+    import pickle
+    with open('./export.pkl', 'rb') as file:
+        nps = pickle.load(file)
+
+    model = MemN2N(batch_size, vocab_size, sentence_size, memory_size, FLAGS.embedding_size, nps['A'], nps['C'], session=sess,
                    hops=FLAGS.hops, max_grad_norm=FLAGS.max_grad_norm)
     for i in range(1, FLAGS.epochs+1):
         # Stepped learning rate
@@ -120,6 +124,8 @@ with tf.Session() as sess:
         np.random.shuffle(batches)
         total_cost = 0.0
         for start, end in batches:
+        #    start = 0
+        #    end = 32
             s = trainS[start:end]
             q = trainQ[start:end]
             a = trainA[start:end]
