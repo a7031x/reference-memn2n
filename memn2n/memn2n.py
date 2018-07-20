@@ -162,15 +162,14 @@ class MemN2N(object):
         with tf.variable_scope(self._name):
             nil_word_slot = tf.zeros([1, self._embedding_size])
             A = tf.concat(axis=0, values=[ nil_word_slot, self._init([self._vocab_size-1, self._embedding_size]) ])
-            C = tf.concat(axis=0, values=[ nil_word_slot, self._init([self._vocab_size-1, self._embedding_size]) ])
 
-            self.A_1 = tf.Variable(A, name="A")
+            self.A_1 = A
 
             self.C = []
 
             for hopn in range(self._hops):
                 with tf.variable_scope('hop_{}'.format(hopn)):
-                    self.C.append(tf.Variable(C, name="C"))
+                    self.C = tf.concat(axis=0, values=[ nil_word_slot, self._init([self._vocab_size-1, self._embedding_size]) ])
 
             # Dont use projection for layerwise weight sharing
             # self.H = tf.Variable(self._init([self._embedding_size, self._embedding_size]), name="H")
