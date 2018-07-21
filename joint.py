@@ -66,7 +66,9 @@ trainA = []
 valA = []
 for task in train:
     S, Q, A = vectorize_data(task, word_idx, sentence_size, memory_size)
-    ts, vs, tq, vq, ta, va = cross_validation.train_test_split(S, Q, A, test_size=0.1, random_state=FLAGS.random_state)
+    ts, vs = S[:900], S[900:]
+    tq, vq = Q[:900], Q[900:]
+    ta, va = A[:900], A[900:]
     trainS.append(ts)
     trainQ.append(tq)
     trainA.append(ta)
@@ -103,9 +105,10 @@ tf.set_random_seed(FLAGS.random_state)
 batch_size = FLAGS.batch_size
 
 # This avoids feeding 1 task after another, instead each batch has a random sampling of tasks
-batches = zip(range(0, n_train-batch_size, batch_size), range(batch_size, n_train, batch_size))
-batches = [(start, end) for start,end in batches]
-
+#batches = zip(range(0, n_train-batch_size, batch_size), range(batch_size, n_train, batch_size))
+#batches = [(start, end) for start,end in batches]
+batches = list(range(n_train))
+np.random.seed(0)
 with tf.Session() as sess:
     model = MemN2N(batch_size, vocab_size, sentence_size, memory_size, FLAGS.embedding_size, session=sess,
                    hops=FLAGS.hops, max_grad_norm=FLAGS.max_grad_norm)
@@ -119,10 +122,15 @@ with tf.Session() as sess:
 
         np.random.shuffle(batches)
         total_cost = 0.0
-        for start, end in batches:
-            s = trainS[start:end]
-            q = trainQ[start:end]
-            a = trainA[start:end]
+        cursor = 0
+        while cursor < n_train:
+            start = cursor
+            end = min(cursor+batch_size, n_train)
+            idx = batches[start:end]
+            cursor = end
+            s = [trainS[x] for x in idx]
+            q = [trainQ[x] for x in idx]
+            a = [trainA[x] for x in idx]
             cost_t = model.batch_fit(s, q, a, lr)
             total_cost += cost_t
 
