@@ -8,6 +8,7 @@ from __future__ import division
 import tensorflow as tf
 import numpy as np
 from six.moves import range
+import pickle
 
 def position_encoding(sentence_size, embedding_size):
     """
@@ -159,9 +160,14 @@ class MemN2N(object):
         self._lr = tf.placeholder(tf.float32, [], name="learning_rate")
 
     def _build_vars(self):
+        with open('./init.pkl', 'rb') as file:
+            nps = pickle.load(file)
+            mat_A = nps['A']
+            mat_C = nps['C']
+
         with tf.variable_scope(self._name):
             nil_word_slot = tf.zeros([1, self._embedding_size])
-            A = tf.concat(axis=0, values=[ nil_word_slot, tf.Variable(self._init([self._vocab_size-1, self._embedding_size]))])
+            A = tf.concat(axis=0, values=[ nil_word_slot,  tf.Variable(mat_A[1:])])
 
             self.A_1 = A
 
@@ -169,7 +175,7 @@ class MemN2N(object):
 
             for hopn in range(self._hops):
                 with tf.variable_scope('hop_{}'.format(hopn)):
-                    C = tf.concat(axis=0, values=[ nil_word_slot, tf.Variable(self._init([self._vocab_size-1, self._embedding_size]))])
+                    C = tf.concat(axis=0, values=[ nil_word_slot, tf.Variable(mat_C[hopn][1:])])
                     self.C.append(C)
 
             # Dont use projection for layerwise weight sharing
