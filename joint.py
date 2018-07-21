@@ -123,7 +123,6 @@ with tf.Session() as sess:
         else:
             anneal = 2.0 ** (FLAGS.anneal_stop_epoch // FLAGS.anneal_rate)
         lr = FLAGS.learning_rate / anneal
-        lr = 0.01
 
         np.random.shuffle(batches)
         total_cost = 0.0
