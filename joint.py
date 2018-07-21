@@ -21,7 +21,7 @@ tf.flags.DEFINE_float("max_grad_norm", 40.0, "Clip gradients to this norm.")
 tf.flags.DEFINE_integer("evaluation_interval", 1, "Evaluate and print results every x epochs")
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 tf.flags.DEFINE_integer("hops", 3, "Number of hops in the Memory Network.")
-tf.flags.DEFINE_integer("epochs", 60, "Number of epochs to train for.")
+tf.flags.DEFINE_integer("epochs", 600, "Number of epochs to train for.")
 tf.flags.DEFINE_integer("embedding_size", 40, "Embedding size for embedding matrices.")
 tf.flags.DEFINE_integer("memory_size", 50, "Maximum size of memory.")
 tf.flags.DEFINE_integer("random_state", None, "Random state.")
@@ -190,6 +190,7 @@ with tf.Session() as sess:
             utils.write_all_lines('./output/details.txt', details)
             utils.write_all_lines('./output/loss.txt', loss_lines)
             utils.write_all_lines('./output/accuracy.txt', accuracy_lines)
+            model.export(sess)
         # Write final results to csv file
         if i == FLAGS.epochs:
             df = pd.DataFrame({
@@ -199,4 +200,3 @@ with tf.Session() as sess:
             }, index=range(1, 21))
             df.index.name = 'Task'
             df.to_csv(FLAGS.output_file)
-            #model.export(sess)
