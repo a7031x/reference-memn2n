@@ -18,7 +18,7 @@ tf.flags.DEFINE_float("learning_rate", 0.01, "Learning rate for Adam Optimizer."
 tf.flags.DEFINE_float("anneal_rate", 15, "Number of epochs between halving the learnign rate.")
 tf.flags.DEFINE_float("anneal_stop_epoch", 60, "Epoch number to end annealed lr schedule.")
 tf.flags.DEFINE_float("max_grad_norm", 40.0, "Clip gradients to this norm.")
-tf.flags.DEFINE_integer("evaluation_interval", 10, "Evaluate and print results every x epochs")
+tf.flags.DEFINE_integer("evaluation_interval", 1, "Evaluate and print results every x epochs")
 tf.flags.DEFINE_integer("batch_size", 32, "Batch size for training.")
 tf.flags.DEFINE_integer("hops", 3, "Number of hops in the Memory Network.")
 tf.flags.DEFINE_integer("epochs", 60, "Number of epochs to train for.")
@@ -110,6 +110,8 @@ batch_size = FLAGS.batch_size
 #batches = [(start, end) for start,end in batches]
 batches = list(range(n_train))
 np.random.seed(0)
+loss_lines = []
+accuracy_lines = []
 with tf.Session() as sess:
     model = MemN2N(batch_size, vocab_size, sentence_size, memory_size, FLAGS.embedding_size, session=sess,
                    hops=FLAGS.hops, max_grad_norm=FLAGS.max_grad_norm)
@@ -166,6 +168,7 @@ with tf.Session() as sess:
             print('-----------------------')
             print('Epoch', i)
             print('Total Cost:', total_cost)
+            '''
             print()
             t = 1
             for t1, t2, t3 in zip(train_accs, val_accs, test_accs):
@@ -175,10 +178,15 @@ with tf.Session() as sess:
                 print("Testing Accuracy = {}".format(t3))
                 print()
                 t += 1
+            '''
             print('-----------------------')
             dev_accuracy = sum(val_accs) / len(val_accs)
             test_accuracy = sum(test_accs) / len(test_accs)
             print('Writing final results to {}, dev: {} test: {}'.format(FLAGS.output_file, dev_accuracy, test_accuracy))
+            loss_lines.append(f'{total_cost:>.4F}')
+            accuracy_lines.append(f'{dev_accuracy:>.4F}')
+            utils.write_all_lines('./output/loss.txt', loss_lines)
+            utils.write_all_lines('./output/accuracy.txt', accuracy_lines)
         # Write final results to csv file
         if i == FLAGS.epochs:
             df = pd.DataFrame({
@@ -188,4 +196,4 @@ with tf.Session() as sess:
             }, index=range(1, 21))
             df.index.name = 'Task'
             df.to_csv(FLAGS.output_file)
-            model.export(sess)
+            #model.export(sess)
