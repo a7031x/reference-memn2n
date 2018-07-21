@@ -112,6 +112,7 @@ batches = list(range(n_train))
 np.random.seed(0)
 loss_lines = []
 accuracy_lines = []
+details = []
 with tf.Session() as sess:
     model = MemN2N(batch_size, vocab_size, sentence_size, memory_size, FLAGS.embedding_size, session=sess,
                    hops=FLAGS.hops, max_grad_norm=FLAGS.max_grad_norm)
@@ -122,6 +123,7 @@ with tf.Session() as sess:
         else:
             anneal = 2.0 ** (FLAGS.anneal_stop_epoch // FLAGS.anneal_rate)
         lr = FLAGS.learning_rate / anneal
+        lr = 0.01
 
         np.random.shuffle(batches)
         total_cost = 0.0
@@ -135,6 +137,7 @@ with tf.Session() as sess:
             q = [trainQ[x] for x in idx]
             a = [trainA[x] for x in idx]
             cost_t = model.batch_fit(s, q, a, lr)
+            details.append(f'{cost_t:>4.4F} [{",".join([str(x) for x in q[0]])}]')
             total_cost += cost_t
 
         if i % FLAGS.evaluation_interval == 0:
@@ -183,8 +186,9 @@ with tf.Session() as sess:
             dev_accuracy = sum(val_accs) / len(val_accs)
             test_accuracy = sum(test_accs) / len(test_accs)
             print('Writing final results to {}, dev: {} test: {}'.format(FLAGS.output_file, dev_accuracy, test_accuracy))
-            loss_lines.append(f'{total_cost:>.4F}')
+            loss_lines.append(f'{total_cost:>6.4F} {dev_accuracy:>.4F}')
             accuracy_lines.append(f'{dev_accuracy:>.4F}')
+            utils.write_all_lines('./output/details.txt', details)
             utils.write_all_lines('./output/loss.txt', loss_lines)
             utils.write_all_lines('./output/accuracy.txt', accuracy_lines)
         # Write final results to csv file
