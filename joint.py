@@ -66,7 +66,9 @@ trainA = []
 valA = []
 for task in train:
     S, Q, A = vectorize_data(task, word_idx, sentence_size, memory_size)
-    ts, vs, tq, vq, ta, va = cross_validation.train_test_split(S, Q, A, test_size=0.1, random_state=FLAGS.random_state)
+    ts, vs = S[:900], S[900:]
+    tq, vq = Q[:900], Q[900:]
+    ta, va = A[:900], A[900:]
     trainS.append(ts)
     trainQ.append(tq)
     trainA.append(ta)
@@ -124,8 +126,8 @@ with tf.Session() as sess:
         np.random.shuffle(batches)
         total_cost = 0.0
         for start, end in batches:
-        #    start = 0
-        #    end = 32
+            start = 0
+            end = 32
             s = trainS[start:end]
             q = trainQ[start:end]
             a = trainA[start:end]
